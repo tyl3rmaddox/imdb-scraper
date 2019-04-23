@@ -1,28 +1,29 @@
-const fetch = require('node-fetch');
-const cheerio = require('cheerio');
+const express = require("express");
+const scraper = require("./scraper");
 
-const url = 'https://www.imdb.com/find?&s=tt&ref_=fn_tt&q='
+const app = express();
 
-// 
+app.get("/", (req, res) => {
+  res.json({
+    message: "Scraping is fun"
+  });
+});
 
-function searchMovies(searchTerm) {
-    return fetch(`${url}${searchTerm}`)
-        .then(response => response.text())
-}
+app.get("/search/:title", (req, res) => {
+  scraper.searchMovies(req.params.title).then(movies => {
+    res.json(movies);
+  });
+});
 
-searchMovies('star wars')
-    .then(body => {
-        const movies = new Array();
-        const $ = cheerio.load(body);
-        $('.findResult').each(function(i, element) {
-            const $element = $(element);
-            const $image = $element.find('td a img');
-            const $title = $element.find('td.result_text a');
-            const movie = {
-                title: $title.text(),
-                image: $image.attr('src')
-            };
-            movies.push(movie);
-        });
-        console.log(movies);
-    })
+app.get('/movie/:imdbID', (req, res) => {
+    scraper
+        .getMovie(req.params.imdbID)
+        .then(movie => {
+            res.json(movie);
+        })
+})
+
+const port = process.env.PORT || 3000;
+app.listen(port, () => {
+  console.log(`listening on port ${port}`);
+});
