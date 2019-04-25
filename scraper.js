@@ -5,9 +5,15 @@ const pcheerio = require("pseudo-cheerio");
 const searchUrl = "https://www.imdb.com/find?&s=tt&ref_=fn_tt&q=";
 const movieUrl = "https://www.imdb.com/title/";
 
-//
+searchCache = {};
+movieCache = {};
 
 function searchMovies(searchTerm) {
+
+  if(searchCache[searchTerm]) {
+    console.log('Serving search from cache: ' + searchTerm)
+    return Promise.resolve(searchCache[searchTerm]);
+  }
   return fetch(`${searchUrl}${searchTerm}`)
     .then(response => response.text())
     .then(body => {
@@ -25,15 +31,32 @@ function searchMovies(searchTerm) {
         };
         movies.push(movie);
       });
+      searchCache[searchTerm] = movies
       return movies;
     });
 }
 
 function getMovie(imdbID) {
+
+  if(movieCache[imdbID]) {
+    console.log('Serving movie from cache: ' + imdbID)
+    return Promise.resolve(movieCache[imdbID]);
+  }
+
   return fetch(`${movieUrl}${imdbID}`)
     .then(response => response.text())
     .then(body => {
       const $ = cheerio.load(body);
+
+      function getItems(itemArray) {
+        return function(i, elem) {
+          const item = $(elem)
+            .text()
+            .trim();
+          itemArray.push(item);
+        };
+      }
+
       const $title = $(".title_wrapper h1");
       const title = $title
         .first()
@@ -43,6 +66,7 @@ function getMovie(imdbID) {
         })
         .text()
         .trim();
+
       const rating = $(".subtext")
         .clone()
         .children()
@@ -59,10 +83,7 @@ function getMovie(imdbID) {
       const genres = new Array();
       $(".subtext a")
         .not(".subtext a[title]")
-        .each(function(i, elem) {
-          const genre = $(elem).text();
-          genres.push(genre);
-        });
+        .each(getItems(genres));
 
       const release = $(".subtext a[title]").text();
       const score = $('span[itemprop="ratingValue"]').text();
@@ -74,38 +95,38 @@ function getMovie(imdbID) {
       const directors = new Array();
       pcheerio
         .find($, "div.credit_summary_item:first a")
-        .each(function(i, elem) {
-          const director = $(elem).text();
-          directors.push(director);
-        });
+        .each(getItems(directors));
 
       const writers = new Array();
-      pcheerio.find($, ".credit_summary_item:eq(1) a").each(function(i, elem) {
-        const writer = $(elem).text();
-        writers.push(writer);
-        const lastIndex = writers[writers.length - 1];
-        if (lastIndex.indexOf("more credits") !== -1) {
-          writers.pop();
-        }
-        return writers;
-      });
+      pcheerio.find($, ".credit_summary_item:eq(1) a").each(getItems(writers));
+      const writersLastIndex = writers[writers.length - 1];
+      if (writersLastIndex.indexOf("more credits") !== -1) {
+        writers.pop();
+      }
 
       const stars = new Array();
-      pcheerio.find($, ".credit_summary_item:eq(2) a").each(function(i, elem) {
-        const star = $(elem).text();
-        stars.push(star);
-        const lastIndex = stars[stars.length - 1];
-        if (lastIndex.indexOf("See full cast & crew") !== -1) {
-          stars.pop();
-        }
-        return stars;
-      });
+      pcheerio.find($, ".credit_summary_item:eq(2) a").each(getItems(stars));
+      const starsLastIndex = stars[stars.length - 1];
+      if (starsLastIndex.indexOf("See full cast & crew") !== -1) {
+        stars.pop();
+      }
 
       const story = $("#titleStoryLine div p span")
         .text()
         .trim();
 
-      return {
+      const budget = pcheerio
+        .find($, "#titleDetails div.txt-block:eq(6)")
+        .contents()
+        .filter(function() {
+          return this.type === "text";
+        })
+        .text()
+        .trim();
+
+      const trailer = $('div.slate a').attr('href');
+
+      const movie = {
         imdbID,
         title,
         rating,
@@ -118,8 +139,13 @@ function getMovie(imdbID) {
         directors,
         writers,
         stars,
-        story
+        story,
+        budget,
+        trailer: `https://www.imdb.com${trailer}`
       };
+
+      movieCache[imdbID] = movie;
+      return movie;
     });
 }
 
