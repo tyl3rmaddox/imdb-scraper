@@ -1,0 +1,11 @@
+{
+    "version": 2,
+    "builds": [
+      { "src": "*.js", "use": "@now/node-server" }
+    ],
+    "routes": [
+        { "src": "/search/(.*)", "dest": "index.js" },
+        { "src": "/movie/(.*)", "dest": "index.js" },
+        { "src": "/(.*)", "dest": "index.js" }
+      ]
+}

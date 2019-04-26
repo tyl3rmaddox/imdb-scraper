@@ -100,7 +100,7 @@ function getMovie(imdbID) {
       const writers = new Array();
       pcheerio.find($, ".credit_summary_item:eq(1) a").each(getItems(writers));
       const writersLastIndex = writers[writers.length - 1];
-      if (writersLastIndex.indexOf("more credits") !== -1) {
+      if (writersLastIndex.indexOf("more credit") !== -1) {
         writers.pop();
       }
 
