@@ -108,6 +108,10 @@ function getMovie(imdbID) {
       pcheerio
         .find($, "div.credit_summary_item:first a")
         .each(getItems(directors));
+        const directorsLastIndex = directors[directors.length - 1];
+        if (directorsLastIndex.indexOf("1") !== -1) {
+          directors.pop();
+        }
 
       const writers = new Array();
       pcheerio.find($, ".credit_summary_item:eq(1) a").each(getItems(writers));
