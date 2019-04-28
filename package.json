@@ -18,5 +18,8 @@
     "nodemon": "^1.18.11",
     "now": "^15.0.8",
     "pseudo-cheerio": "^1.0.5"
+  },
+  "devDependencies": {
+    "lite-server": "^2.4.0"
   }
 }
