@@ -36,6 +36,18 @@ function searchMovies(searchTerm) {
     });
 }
 
+function getPoster (posterUrl) {
+  return fetch(posterUrl)
+    .then(response => response.text())
+    .then(body => {
+      const $ = cheerio.load(body);
+      console.log(body)
+
+      const poster = 'hello';
+      return poster;
+    })
+}
+
 function getMovie(imdbID) {
 
   if(movieCache[imdbID]) {
